@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="bpmn_designer.TaskPanel" owl="1">
+
+        <!-- 审批/办理模式 -->
+        <div t-if="isApprovalTask()" class="mb-3 row">
+            <label class="col-sm-4 col-form-label fw-bold">审批方式</label>
+            <div class="col-sm-8">
+                <select class="form-select" t-on-change="onApprovalModeChange">
+                    <option value="anyone" t-att-selected="state.approvalMode === 'anyone'">单人审批/或签</option>
+                    <option value="countersign" t-att-selected="state.approvalMode === 'countersign'">多人会签</option>
+                </select>
+                <small class="form-text text-muted">或签：任一人处理即可。会签：所有人同意才通过。</small>
+            </div>
+        </div>
+        <div t-if="isHandlingTask()" class="mb-3 row">
+            <label class="col-sm-4 col-form-label fw-bold">办理模式</label>
+            <div class="col-sm-8">
+                <select class="form-select" t-on-change="onHandlingModeChange">
+                    <option value="blocking" t-att-selected="state.handlingMode === 'blocking'">阻塞式 (截断流程)</option>
+                    <option value="non_blocking" t-att-selected="state.handlingMode === 'non_blocking'">非阻塞式 (不截断)</option>
+                </select>
+                <small class="form-text text-muted">阻塞式：流程暂停等待此任务完成。非阻塞式：仅创建待办，流程继续。</small>
+            </div>
+        </div>
+
+        <hr/>
+        <h6 class="mt-3">人员指派</h6>
+
+        <!-- 指派类型 -->
+        <div class="mb-3 row">
+            <label class="col-sm-4 col-form-label fw-bold">指派类型</label>
+            <div class="col-sm-8">
+                <select class="form-select" t-on-change="onAssigneeTypeChange">
+                    <option value="user" t-att-selected="state.assigneeType === 'user'">指定用户</option>
+                    <t t-if="hasHrModule">
+                        <option value="position" t-att-selected="state.assigneeType === 'position'">按职位/范围查找</option>
+                        <option value="reporting_line" t-att-selected="state.assigneeType === 'reporting_line'">按汇报关系查找</option>
+                    </t>
+                </select>
+            </div>
+        </div>
+
+        <!-- 按用户指派 -->
+        <div t-if="state.assigneeType === 'user'" class="mb-3 row">
+            <label class="col-sm-4 col-form-label">指定用户</label>
+            <div class="col-sm-8">
+                <BpmnMany2oneField resModel="'res.users'" value="businessObject.get('odoo:assignee')" update="(newId) => this.updateOdooProperty('odoo:assignee', newId)" placeholder="'选择一个或多个用户...'"/>
+            </div>
+        </div>
+
+        <!-- 按职位指派 (整个块现在被 t-if 包裹) -->
+        <div t-if="hasHrModule and state.assigneeType === 'position'">
+            <div class="mb-3 row">
+                <label class="col-sm-4 col-form-label">职位</label>
+                <div class="col-sm-8">
+                    <BpmnMany2oneField resModel="'hr.job'" value="businessObject.get('odoo:assigneeJob')" update="(newId) => this.updateOdooProperty('odoo:assigneeJob', newId)" placeholder="'选择一个职位...'"/>
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label class="col-sm-4 col-form-label">搜索范围</label>
+                <div class="col-sm-8">
+                    <select class="form-select" t-on-change="onScopeChange">
+                        <option value="global" t-att-selected="state.assigneeScope === 'global' || !state.assigneeScope">全局</option>
+                        <option value="department" t-att-selected="state.assigneeScope === 'department'">在指定部门</option>
+                        <option value="submitter_dept" t-att-selected="state.assigneeScope === 'submitter_dept'">在提交人相关部门</option>
+                    </select>
+                </div>
+            </div>
+            <div t-if="state.assigneeScope === 'department'" class="mb-3 row">
+                <label class="col-sm-4 col-form-label">指定部门</label>
+                <div class="col-sm-8">
+                    <BpmnMany2oneField resModel="'hr.department'" value="businessObject.get('odoo:assigneeDepartment')" update="(newId) => this.updateOdooProperty('odoo:assigneeDepartment', newId)" placeholder="'选择一个部门...'"/>
+                </div>
+            </div>
+            <div t-if="state.assigneeScope === 'submitter_dept'" class="mb-3 row">
+                <label class="col-sm-4 col-form-label">部门级别</label>
+                <div class="col-sm-8">
+                    <input type="number" class="form-control" min="0" t-att-value="businessObject.get('odoo:assigneeDeptLevel') || '0'" t-on-change="(ev) => this.updateOdooProperty('odoo:assigneeDeptLevel', ev.target.value)"/>
+                    <small class="form-text text-muted">0=本部门, 1=上级部门, ...</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 按汇报关系指派 (整个块现在被 t-if 包裹) -->
+        <div t-if="hasHrModule and state.assigneeType === 'reporting_line'">
+            <div class="mb-3 row">
+                <label class="col-sm-4 col-form-label fw-bold">汇报层级</label>
+                <div class="col-sm-8">
+                    <input type="number" class="form-control" min="0" t-att-value="businessObject.get('odoo:reportingLevel') || '1'" t-on-change="(ev) => this.updateOdooProperty('odoo:reportingLevel', ev.target.value)"/>
+                    <small class="form-text text-muted">0=发起人, 1=直属上级, 2=上级的上级, ...</small>
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label class="col-sm-4 col-form-label fw-bold">审批至职位</label>
+                <div class="col-sm-8">
+                    <BpmnMany2oneField resModel="'hr.job'" value="businessObject.get('odoo:ceilingJobId')" update="(newId) => this.updateOdooProperty('odoo:ceilingJobId', newId)" placeholder="'(可选) 指定审批上限...'"/>
+                    <small class="form-text text-muted">汇报链查找到此职位时将停止。</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- 附件配置 -->
+        <div t-if="isApprovalTask() or isHandlingTask()">
+            <hr/>
+            <h6 class="mt-3">附件配置</h6>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="allowAttachments" t-att-checked="businessObject.get('odoo:allowAttachments')" t-on-change="(ev) => this.updateOdooProperty('odoo:allowAttachments', ev.target.checked)"/>
+                <label class="form-check-label" for="allowAttachments">允许上传附件</label>
+            </div>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="requireAttachments" t-att-checked="businessObject.get('odoo:requireAttachments')" t-att-disabled="!businessObject.get('odoo:allowAttachments')" t-on-change="(ev) => this.updateOdooProperty('odoo:requireAttachments', ev.target.checked)"/>
+                <label class="form-check-label" for="requireAttachments">附件为必填项</label>
+                <small class="form-text text-muted d-block">只有在允许上传附件时，此项才有效。</small>
+            </div>
+        </div>
+
+        <!-- 超时处理配置 -->
+        <div t-if="isTimeoutConfigurableTask()">
+            <hr/>
+            <h6 class="mt-3">超时处理</h6>
+            <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="timeoutEnable" t-att-checked="businessObject.get('odoo:timeoutEnable')" t-on-change="onTimeoutEnableChange"/>
+                <label class="form-check-label" for="timeoutEnable">启用超时处理</label>
+            </div>
+            <div t-if="businessObject.get('odoo:timeoutEnable')" class="o_workflow_timeout_settings">
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label fw-bold">超时时长</label>
+                    <div class="col-sm-8 d-flex">
+                        <input type="number" class="form-control me-2" style="width: 80px;" min="1" t-att-value="businessObject.get('odoo:timeoutDuration') || '24'" t-on-change="(ev) => updateOdooProperty('odoo:timeoutDuration', ev.target.value)"/>
+                        <select class="form-select" t-on-change="(ev) => updateOdooProperty('odoo:timeoutUnit', ev.target.value)">
+                            <option value="minutes" t-att-selected="businessObject.get('odoo:timeoutUnit') === 'minutes'">分钟</option>
+                            <option value="hours" t-att-selected="!businessObject.get('odoo:timeoutUnit') || businessObject.get('odoo:timeoutUnit') === 'hours'">小时</option>
+                            <option value="work_days" t-att-selected="businessObject.get('odoo:timeoutUnit') === 'work_days'">工作日</option>
+                            <option value="calendar_days" t-att-selected="businessObject.get('odoo:timeoutUnit') === 'calendar_days'">自然日</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mb-3 row">
+                    <label class="col-sm-4 col-form-label fw-bold">超时后动作</label>
+                    <div class="col-sm-8">
+                        <select class="form-select" t-on-change="onTimeoutActionChange">
+                            <option value="do_nothing" t-att-selected="state.timeoutAction === 'do_nothing'">无操作，仅记录</option>
+                            <option value="auto_approve" t-att-selected="state.timeoutAction === 'auto_approve'">自动同意</option>
+                            <option value="auto_reject" t-att-selected="state.timeoutAction === 'auto_reject'">自动拒绝</option>
+                            <option value="escalate" t-att-selected="state.timeoutAction === 'escalate'">转交给...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div t-if="state.timeoutAction === 'escalate'" class="o_workflow_escalation_target border p-3 rounded bg-light mt-2">
+                    <h6 class="mb-3 border-bottom pb-2">转交目标</h6>
+                    <div class="mb-3 row">
+                        <label class="col-sm-4 col-form-label fw-bold">指派类型</label>
+                        <div class="col-sm-8">
+                            <select class="form-select" t-on-change="onTimeoutAssigneeTypeChange">
+                                <option value="user" t-att-selected="state.timeoutAssigneeType === 'user'">指定用户</option>
+                                <t t-if="hasHrModule">
+                                    <option value="position" t-att-selected="state.timeoutAssigneeType === 'position'">按职位/范围查找</option>
+                                    <option value="reporting_line" t-att-selected="state.timeoutAssigneeType === 'reporting_line'">按汇报关系查找</option>
+                                </t>
+                            </select>
+                        </div>
+                    </div>
+                    <div t-if="state.timeoutAssigneeType === 'user'" class="mb-3 row">
+                        <label class="col-sm-4 col-form-label">指定用户</label>
+                        <div class="col-sm-8">
+                            <BpmnMany2oneField resModel="'res.users'" value="businessObject.get('odoo:timeoutAssignee')" update="(newId) => updateOdooProperty('odoo:timeoutAssignee', newId)" placeholder="'选择转交目标用户...'"/>
+                        </div>
+                    </div>
+                    <div t-if="hasHrModule and state.timeoutAssigneeType === 'position'">
+                        <div class="mb-3 row">
+                            <label class="col-sm-4 col-form-label">职位</label>
+                            <div class="col-sm-8">
+                                <BpmnMany2oneField resModel="'hr.job'" value="businessObject.get('odoo:timeoutAssigneeJob')" update="(newId) => updateOdooProperty('odoo:timeoutAssigneeJob', newId)" placeholder="'选择一个职位...'"/>
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <label class="col-sm-4 col-form-label">搜索范围</label>
+                            <div class="col-sm-8">
+                                <select class="form-select" t-on-change="onTimeoutScopeChange">
+                                    <option value="global" t-att-selected="state.timeoutAssigneeScope === 'global' || !state.timeoutAssigneeScope">全局</option>
+                                    <option value="department" t-att-selected="state.timeoutAssigneeScope === 'department'">在指定部门</option>
+                                    <option value="submitter_dept" t-att-selected="state.timeoutAssigneeScope === 'submitter_dept'">在提交人相关部门</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div t-if="state.timeoutAssigneeScope === 'department'" class="mb-3 row">
+                            <label class="col-sm-4 col-form-label">指定部门</label>
+                            <div class="col-sm-8">
+                                <BpmnMany2oneField resModel="'hr.department'" value="businessObject.get('odoo:timeoutAssigneeDepartment')" update="(newId) => updateOdooProperty('odoo:timeoutAssigneeDepartment', newId)" placeholder="'选择一个部门...'"/>
+                            </div>
+                        </div>
+                        <div t-if="state.timeoutAssigneeScope === 'submitter_dept'" class="mb-3 row">
+                            <label class="col-sm-4 col-form-label">部门级别</label>
+                            <div class="col-sm-8">
+                                <input type="number" class="form-control" min="0" t-att-value="businessObject.get('odoo:timeoutAssigneeDeptLevel') || '0'" t-on-change="(ev) => updateOdooProperty('odoo:timeoutAssigneeDeptLevel', ev.target.value)"/>
+                                <small class="form-text text-muted">0=本部门, 1=上级部门, ...</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div t-if="hasHrModule and state.timeoutAssigneeType === 'reporting_line'">
+                        <div class="mb-3 row">
+                            <label class="col-sm-4 col-form-label fw-bold">汇报层级</label>
+                            <div class="col-sm-8">
+                                <input type="number" class="form-control" min="0" t-att-value="businessObject.get('odoo:timeoutReportingLevel') || '1'" t-on-change="(ev) => updateOdooProperty('odoo:timeoutReportingLevel', ev.target.value)"/>
+                                <small class="form-text text-muted">0=发起人, 1=直属上级, ...</small>
+                            </div>
+                        </div>
+                        <div class="mb-3 row">
+                            <label class="col-sm-4 col-form-label fw-bold">审批至职位</label>
+                            <div class="col-sm-8">
+                                <BpmnMany2oneField resModel="'hr.job'" value="businessObject.get('odoo:timeoutCeilingJobId')" update="(newId) => updateOdooProperty('odoo:timeoutCeilingJobId', newId)" placeholder="'(可选) 指定审批上限...'"/>
+                                <small class="form-text text-muted">汇报链查找到此职位时将停止。</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提醒设置 -->
+        <div t-if="isTimeoutConfigurableTask()">
+            <hr/>
+            <h6 class="mt-3">提醒设置</h6>
+            <div t-if="!state.reminders || state.reminders.length === 0" class="text-muted text-center p-2">
+                <small>暂无提醒规则。</small>
+            </div>
+            <div t-foreach="state.reminders" t-as="reminder" t-key="reminder.id" class="border rounded p-3 mb-2 bg-light position-relative">
+                <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" style="line-height: 1; padding: 0.2rem 0.4rem;" t-on-click="() => this.removeReminder(reminder_index)" title="删除此规则">
+                    <i class="fa fa-trash"/>
+                </button>
+                <div class="row mb-2 align-items-center">
+                    <div class="col-lg-3 fw-bold small">触发时间</div>
+                    <div class="col-lg-9 d-flex align-items-center flex-wrap">
+                        <span class="me-1">截止时间</span>
+                        <select class="form-select form-select-sm w-auto me-1" t-on-change="(ev) => this.updateReminderTrigger(reminder_index, 'offset_sign', ev.target.value)">
+                            <option value="-1" t-att-selected="Math.sign(reminder.trigger.offset || -1) === -1">之前</option>
+                            <option value="1" t-att-selected="Math.sign(reminder.trigger.offset || -1) >= 0">之后</option>
+                        </select>
+                        <input type="number" class="form-control form-control-sm me-1" style="width: 60px;" min="0" t-att-value="Math.abs(reminder.trigger.offset || 0)" t-on-change="(ev) => this.updateReminderTrigger(reminder_index, 'offset_value', ev.target.value)"/>
+                        <select class="form-select form-select-sm w-auto" t-on-change="(ev) => this.updateReminderTrigger(reminder_index, 'unit', ev.target.value)">
+                            <option value="minutes" t-att-selected="reminder.trigger.unit === 'minutes'">分钟</option>
+                            <option value="hours" t-att-selected="reminder.trigger.unit === 'hours'">小时</option>
+                            <option value="days" t-att-selected="reminder.trigger.unit === 'days'">天</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <div class="col-lg-3 fw-bold small">提醒渠道</div>
+                    <div class="col-lg-9">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" t-att-id="'channel_odoo_' + reminder.id" t-att-checked="reminder.channels.includes('odoo')" t-on-change="(ev) => this.updateReminderArray(reminder_index, 'channels', 'odoo', ev.target.checked)"/>
+                            <label class="form-check-label" t-att-for="'channel_odoo_' + reminder.id">Odoo通知</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" t-att-id="'channel_email_' + reminder.id" t-att-checked="reminder.channels.includes('email')" t-on-change="(ev) => this.updateReminderArray(reminder_index, 'channels', 'email', ev.target.checked)"/>
+                            <label class="form-check-label" t-att-for="'channel_email_' + reminder.id">邮件</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" t-att-id="'channel_chatter_' + reminder.id" t-att-checked="reminder.channels.includes('chatter')" t-on-change="(ev) => this.updateReminderArray(reminder_index, 'channels', 'chatter', ev.target.checked)"/>
+                            <label class="form-check-label" t-att-for="'channel_chatter_' + reminder.id">Chatter</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-2 align-items-center">
+                    <div class="col-lg-3 fw-bold small">提醒对象</div>
+                    <div class="col-lg-9">
+                         <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" t-att-id="'recipient_handler_' + reminder.id" t-att-checked="reminder.recipients.includes('assignee')" t-on-change="(ev) => this.updateReminderArray(reminder_index, 'recipients', 'assignee', ev.target.checked)"/>
+                            <label class="form-check-label" t-att-for="'recipient_handler_' + reminder.id">当前处理人</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" t-att-id="'recipient_starter_' + reminder.id" t-att-checked="reminder.recipients.includes('starter')" t-on-change="(ev) => this.updateReminderArray(reminder_index, 'recipients', 'starter', ev.target.checked)"/>
+                            <label class="form-check-label" t-att-for="'recipient_starter_' + reminder.id">流程发起人</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-lg-3 fw-bold small">提醒文案</div>
+                    <div class="col-lg-9">
+                        <textarea class="form-control form-control-sm" rows="2"
+                                  placeholder="例如：您的任务'{record_name}'即将于{deadline}超时，请尽快处理。"
+                                  t-on-change="(ev) => this.updateReminder(reminder_index, 'message', ev.target.value)"><t t-esc="reminder.message"/></textarea>
+                    </div>
+                </div>
+                <div class="border-top pt-2">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" t-att-id="'rep_enabled_' + reminder.id" t-att-checked="reminder.repetition.enabled" t-on-change="(ev) => this.updateReminderRepetition(reminder_index, 'enabled', ev.target.checked)"/>
+                        <label class="form-check-label" t-att-for="'rep_enabled_' + reminder.id">启用重复提醒</label>
+                    </div>
+                    <div t-if="reminder.repetition.enabled" class="row align-items-center">
+                        <div class="col-lg-12 d-flex align-items-center flex-wrap">
+                            <span class="me-1 small">每隔</span>
+                            <input type="number" class="form-control form-control-sm me-1" style="width: 60px;" min="1" t-att-value="reminder.repetition.interval || 1" t-on-change="(ev) => this.updateReminderRepetition(reminder_index, 'interval', ev.target.value)"/>
+                            <select class="form-select form-select-sm w-auto me-2" t-on-change="(ev) => this.updateReminderRepetition(reminder_index, 'unit', ev.target.value)">
+                                <option value="minutes" t-att-selected="reminder.repetition.unit === 'minutes'">分钟</option>
+                                <option value="hours" t-att-selected="reminder.repetition.unit === 'hours'">小时</option>
+                                <option value="days" t-att-selected="reminder.repetition.unit === 'days'">天</option>
+                            </select>
+                            <span class="me-1 small">提醒一次，最多提醒</span>
+                            <input type="number" class="form-control form-control-sm me-1" style="width: 60px;" min="1" t-att-value="reminder.repetition.limit || 3" t-on-change="(ev) => this.updateReminderRepetition(reminder_index, 'limit', ev.target.value)"/>
+                            <span class="small">次</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-sm btn-secondary mt-2" t-on-click="addReminder">
+                <i class="fa fa-plus me-1"/>添加提醒规则
+            </button>
+        </div>
+
+    </t>
+</templates>

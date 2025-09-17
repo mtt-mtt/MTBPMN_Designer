@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bpmn_designer.BpmnDesignerClientTemplate" owl="1">
+        <div class="container-fluid o_bpmn_designer_client p-0" style="height:100vh;display:flex;">
+
+            <div class="row flex-grow-1 g-0" style="min-height:0;">
+                <div t-att-class="{
+                        'col-md-9': state.selectedElement,
+                        'col-12': !state.selectedElement,
+                        'o_bpmn_canvas_container': true,
+                        'p-0': true
+                     }"
+                     style="height:100%; transition: width 0.3s ease-in-out;">
+
+                    <div class="o_bpmn_action_buttons">
+                        <button type="button" class="btn btn-secondary" t-on-click="backToForm" title="返回">
+                            <i class="fa fa-arrow-left me-1"/>返回
+                        </button>
+                        <button type="button" class="btn btn-primary" t-on-click="saveBpmn" title="保存并关闭">
+                            <i class="fa fa-save me-1"/>保存<span t-if="state.isDirty" class="ms-1 text-warning fw-bold">*</span>
+                        </button>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                               <i class="fa fa-cog"/> 文件操作
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="#" t-on-click="openFile">
+                                        <i class="fa fa-folder-open-o fa-fw me-2"/>打开 BPMN...
+                                    </a>
+                                    <input type="file" t-ref="fileInput" class="d-none" t-on-change="onFileChange" accept=".bpmn"/>
+                                </li>
+                                <li><hr class="dropdown-divider"/></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" t-on-click="downloadBpmn">
+                                        <i class="fa fa-download fa-fw me-2"/>下载为 BPMN
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" t-on-click="exportSvg">
+                                        <i class="fa fa-picture-o fa-fw me-2"/>导出为 SVG
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="bpmnContainer" class="border rounded bg-white w-100 h-100" style="min-height:500px;min-width:300px;"></div>
+                </div>
+
+                <div t-if="state.selectedElement" class="col-md-3 border-start p-3 bg-light o_bpmn_properties_container" style="height:100%;overflow-y:auto;">
+                    <t t-if="state.viewerReady">
+                        <BpmnPropertiesPanel
+                            t-key="state.elementVersion"
+                            element="state.selectedElement"
+                            bpmnModeler="viewer"
+                            targetModel="target_model"
+                            features="featureAvailability"
+                        />
+                    </t>
+                    <t t-else="">
+                        <div class="text-center text-muted p-5">
+                            <i class="fa fa-spinner fa-spin fa-2x"/>
+                            <p class="mt-2">正在加载设计器...</p>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

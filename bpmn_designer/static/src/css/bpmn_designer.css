@@ -1,0 +1,53 @@
+/* --- 新增：布局和悬浮按钮样式 --- */
+.o_bpmn_canvas_container {
+    position: relative; /* 为绝对定位的子元素提供定位上下文 */
+    transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1); /* 平滑的宽度变化动画 */
+}
+
+.o_bpmn_action_buttons {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    display: flex;
+    gap: 8px;
+}
+
+.o_bpmn_action_buttons .btn {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* --- 新增：为属性面板添加入场动画 --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.o_bpmn_properties_container {
+    animation: fadeIn 0.35s ease-in-out;
+}
+
+/* --- 结束新增 --- */
+
+
+/* 自定义 Palette 按钮样式 (保留不变) */
+.djs-palette .entry.fa {
+    font-size: 22px;
+    color:  #555;
+    padding: 5px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.djs-palette .entry.fa:hover {
+    color:  #000;
+    background-color:  #e0e0e0;
+    cursor: pointer;
+}
+.djs-palette .entry.odoo-cc-task-icon:hover {
+    color:  #007bff;
+}
+
+.djs-palette .entry.odoo-cc-task-icon::before {
+    /* color: #525262; */
+}

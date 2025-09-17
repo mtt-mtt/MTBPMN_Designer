@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="bpmn_designer.BpmnDomainField" owl="1">
+        <div class="o_bpmn_domain_field border rounded p-2 bg-white">
+            <t t-if="!props.resModel">
+                <span class="text-danger">
+                    <i class="fa fa-exclamation-triangle me-1"/>
+                    错误：未指定目标模型 (resModel)。
+                </span>
+            </t>
+            <!-- ========== 核心修正点：将 t-else 拆分为 t-if 的反向条件 ========== -->
+            <!-- 之前这里是 <t t-else="">，但有时 t-else 结构复杂时容易出错。 -->
+            <!-- 改为 <t t-if="props.resModel"> 更清晰，且能避免闭合标签错误。-->
+            <t t-if="props.resModel">
+                <div t-if="!state.isEditing" class="d-flex flex-column">
+                    <!-- 显示模式 -->
+                    <div class="flex-grow-1">
+                        <DomainSelector
+                            resModel="props.resModel"
+                            domain="state.currentDomain"
+                            readonly="true"
+                        />
+                    </div>
+                    <div class="mt-2 text-end">
+                        <button class="btn btn-sm btn-secondary" t-on-click="switchToEditMode">
+                            <i class="fa fa-pencil me-1"/> 编辑条件
+                        </button>
+                    </div>
+                </div>
+                <div t-else="" class="d-flex flex-column">
+                    <!-- 编辑模式 -->
+                    <div class="flex-grow-1">
+                         <DomainSelector
+                            resModel="props.resModel"
+                            domain="state.currentDomain"
+                            readonly="false"
+                            update="onUpdate"
+                        />
+                    </div>
+                    <div class="mt-2 text-end">
+                         <button class="btn btn-sm btn-primary" t-on-click="switchToViewMode">
+                            <i class="fa fa-check me-1"/> 完成
+                        </button>
+                    </div>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>

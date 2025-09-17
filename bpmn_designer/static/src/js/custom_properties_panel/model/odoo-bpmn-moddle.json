@@ -1,0 +1,75 @@
+{
+  "name": "OdooBPMN",
+  "uri": "http://odoo.com/schema/bpmn/odoo",
+  "prefix": "odoo",
+  "types": [
+    {
+      "name": "AssignableTask",
+      "extends": [ "bpmn:UserTask" ],
+      "properties": [
+        { "name": "taskCategory", "isAttr": true, "type": "String", "default": "approval" },
+        { "name": "approvalMode", "isAttr": true, "type": "String", "default": "anyone" },
+        { "name": "handlingMode", "isAttr": true, "type": "String", "default": "blocking" },
+
+        { "name": "assignee", "isAttr": true, "type": "String" },
+        { "name": "assigneeType", "isAttr": true, "type": "String", "default": "user" },
+        { "name": "assigneeJob", "isAttr": true, "type": "String" },
+        { "name": "assigneeScope", "isAttr": true, "type": "String" },
+        { "name": "assigneeDepartment", "isAttr": true, "type": "String" },
+        { "name": "assigneeDeptLevel", "isAttr": true, "type": "String" },
+        { "name": "reportingLevel", "isAttr": true, "type": "String" },
+        { "name": "ceilingJobId", "isAttr": true, "type": "String" },
+
+        { "name": "allowAttachments", "isAttr": true, "type": "Boolean", "default": false },
+        { "name": "requireAttachments", "isAttr": true, "type": "Boolean", "default": false },
+
+        { "name": "timeoutEnable", "isAttr": true, "type": "Boolean", "default": false },
+        { "name": "timeoutDuration", "isAttr": true, "type": "String" },
+        { "name": "timeoutUnit", "isAttr": true, "type": "String", "default": "hours" },
+        { "name": "timeoutAction", "isAttr": true, "type": "String", "default": "do_nothing" },
+
+        { "name": "timeoutAssignee", "isAttr": true, "type": "String" },
+        { "name": "timeoutAssigneeType", "isAttr": true, "type": "String" },
+        { "name": "timeoutAssigneeJob", "isAttr": true, "type": "String" },
+        { "name": "timeoutAssigneeScope", "isAttr": true, "type": "String" },
+        { "name": "timeoutAssigneeDepartment", "isAttr": true, "type": "String" },
+        { "name": "timeoutAssigneeDeptLevel", "isAttr": true, "type": "String" },
+        { "name": "timeoutReportingLevel", "isAttr": true, "type": "String" },
+        { "name": "timeoutCeilingJobId", "isAttr": true, "type": "String" },
+
+        { "name": "reminders", "isAttr": true, "type": "String" }
+      ]
+    },
+    {
+      "name": "ConditionalFlow",
+      "extends": [ "bpmn:SequenceFlow" ],
+      "properties": [
+        { "name": "conditionDomain", "isAttr": true, "type": "String" }
+      ]
+    },
+    {
+      "name": "OdooCCServiceTask",
+      "superClass": [ "bpmn:ServiceTask" ],
+      "properties": [
+        { "name": "taskType", "isAttr": true, "type": "String", "default": "cc" },
+
+        { "name": "assignee", "isAttr": true, "type": "String" },
+        { "name": "assigneeType", "isAttr": true, "type": "String", "default": "user" },
+        { "name": "assigneeJob", "isAttr": true, "type": "String" },
+        { "name": "assigneeScope", "isAttr": true, "type": "String" },
+        { "name": "assigneeDepartment", "isAttr": true, "type": "String" },
+        { "name": "assigneeDeptLevel", "isAttr": true, "type": "String" },
+        { "name": "reportingLevel", "isAttr": true, "type": "String" },
+        { "name": "ceilingJobId", "isAttr": true, "type": "String" }
+      ]
+    },
+    {
+      "name": "Version",
+      "superClass": [ "Element" ],
+      "properties": [
+        { "name": "body", "isBody": true, "type": "String" }
+      ]
+    }
+  ],
+  "associations": []
+}
